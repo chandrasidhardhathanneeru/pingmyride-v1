@@ -32,6 +32,17 @@ class _LoginPageState extends State<LoginPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      // Clear fields when switching tabs for better UX
+      if (!_tabController.indexIsChanging) {
+        _emailController.clear();
+        _passwordController.clear();
+        // Reset validation state
+        for (var key in _formKeys) {
+          key.currentState?.reset();
+        }
+      }
+    });
   }
 
   @override
@@ -101,45 +112,6 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  Widget _buildUserTypeCard(UserType userType, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Icon(
-              _getIconForUserType(userType),
-              size: 30,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            userType.label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   IconData _getIconForUserType(UserType userType) {
     switch (userType) {
       case UserType.student:
@@ -157,6 +129,7 @@ class _LoginPageState extends State<LoginPage>
       key: _formKeys[formIndex],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           CustomTextField(
             label: 'Email',
@@ -174,7 +147,7 @@ class _LoginPageState extends State<LoginPage>
               return null;
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           CustomTextField(
             label: 'Password',
             hint: 'Enter your password',
@@ -191,22 +164,29 @@ class _LoginPageState extends State<LoginPage>
               return null;
             },
           ),
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                // Handle forgot password
-              },
-              child: const Text('Forgot Password?'),
-            ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           CustomButton(
             text: 'Login as ${userType.label}',
             onPressed: () => _handleLogin(userType),
             isLoading: _isLoading,
             icon: _getIconForUserType(userType),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                // Handle forgot password
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(0, 0),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Forgot Password?',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
           ),
         ],
       ),
@@ -215,132 +195,187 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 700;
+    
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              FadeInDown(
-                duration: const Duration(milliseconds: 600),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/icons/app_icon.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'PingMyRide',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your reliable ride tracking companion',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth > 600 ? 32 : 20,
+              vertical: isSmallScreen ? 12 : 16,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 500,
+                minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom - (isSmallScreen ? 24 : 32),
               ),
-              const SizedBox(height: 40),
-              FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 200),
-                child: Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.outline,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(16),
-                            topRight: Radius.circular(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Logo and Title
+                  FadeInDown(
+                    duration: const Duration(milliseconds: 600),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: isSmallScreen ? 70 : 90,
+                          height: isSmallScreen ? 70 : 90,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            image: const DecorationImage(
+                              image: AssetImage('assets/icons/app_icon.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                        child: TabBar(
-                          controller: _tabController,
-                          indicator: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(8),
+                        SizedBox(height: isSmallScreen ? 8 : 16),
+                        Text(
+                          'PingMyRide',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 28 : 32,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
                           ),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          labelColor: Theme.of(context).colorScheme.onPrimary,
-                          unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
-                          tabs: UserType.values
-                              .map((type) => Tab(
-                                    icon: Icon(_getIconForUserType(type)),
-                                    text: type.label,
-                                  ))
-                              .toList(),
                         ),
-                      ),
-                      Container(
-                        height: 400,
-                        padding: const EdgeInsets.all(24),
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: UserType.values
-                              .map((type) => _buildLoginForm(type))
-                              .toList(),
+                        SizedBox(height: isSmallScreen ? 4 : 6),
+                        Text(
+                          'Your reliable ride tracking companion',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 14 : 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 400),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account?",
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                    const SizedBox(width: 4),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  SizedBox(height: isSmallScreen ? 20 : 24),
+                  
+                  // Login Card
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    delay: const Duration(milliseconds: 200),
+                    child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
+                        ),
                       ),
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const SignUpPage()),
-                        );
-                      },
-                      child: const Text('Sign Up'),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // User Type Selector Header
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: TabBar(
+                              controller: _tabController,
+                              indicator: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              labelColor: Theme.of(context).colorScheme.onPrimary,
+                              unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
+                              labelStyle: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              unselectedLabelStyle: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              tabs: UserType.values
+                                  .map((type) => Tab(
+                                        icon: Icon(
+                                          _getIconForUserType(type),
+                                          size: isSmallScreen ? 20 : 24,
+                                        ),
+                                        text: type.label,
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
+                          
+                          // Login Form
+                          Padding(
+                            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // TabBarView with intrinsic sizing
+                                SizedBox(
+                                  height: isSmallScreen ? 280 : 320,
+                                  child: TabBarView(
+                                    controller: _tabController,
+                                    children: UserType.values
+                                        .map((type) => SingleChildScrollView(
+                                              child: _buildLoginForm(type),
+                                            ))
+                                        .toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: isSmallScreen ? 8 : 12),
+                  
+                  // Sign Up Link
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    delay: const Duration(milliseconds: 400),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account?",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: isSmallScreen ? 13 : 14,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                            minimumSize: const Size(0, 0),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(builder: (context) => const SignUpPage()),
+                            );
+                          },
+                          child: Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 13 : 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
