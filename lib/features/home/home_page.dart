@@ -25,14 +25,12 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _HomePageState extends State<HomePage> {
   bool _showWelcomeCard = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     // Initialize bus service data when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<BusService>(context, listen: false).initialize();
@@ -46,12 +44,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         });
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -127,25 +119,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 child: _showWelcomeCard ? _buildWelcomeCard() : const SizedBox.shrink(),
               ),
             ),
-            SizedBox(height: _showWelcomeCard ? 24 : 8),
-            TabBar(
-              controller: _tabController,
-              labelColor: AppTheme.primaryColor,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppTheme.primaryColor,
-              tabs: const [
-                Tab(icon: Icon(Icons.directions_bus), text: 'Available Buses'),
-                Tab(icon: Icon(Icons.confirmation_number), text: 'My Bookings'),
-              ],
-            ),
+            SizedBox(height: _showWelcomeCard ? 16 : 0),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAvailableBusesTab(busService),
-                  _buildMyBookingsTab(busService),
-                ],
-              ),
+              child: _buildAvailableBusesTab(busService),
             ),
           ],
         );
@@ -1174,8 +1150,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
 
     if (result == true) {
-      // Payment successful, switch to bookings tab
-      _tabController.animateTo(1);
+      // Payment successful
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment successful! Check your bookings page.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -1207,14 +1189,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully booked ${bus.busNumber}!'),
+            content: Text('Successfully booked ${bus.busNumber}! Check your bookings page.'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
           ),
         );
-        
-        // Switch to bookings tab to show the new booking
-        _tabController.animateTo(1);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

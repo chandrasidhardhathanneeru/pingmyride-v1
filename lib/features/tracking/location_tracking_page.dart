@@ -91,8 +91,8 @@ class _LocationTrackingPageState extends State<LocationTrackingPage> {
             const Divider(height: 24),
             _buildStatusRow(
               'Permission',
-              locationManager.permission?.toString().contains('always') ?? false ||
-                  locationManager.permission?.toString().contains('whileInUse') ?? false,
+              (locationManager.permission?.toString().contains('always') ?? false) ||
+                  (locationManager.permission?.toString().contains('whileInUse') ?? false),
               Icons.security,
             ),
           ],

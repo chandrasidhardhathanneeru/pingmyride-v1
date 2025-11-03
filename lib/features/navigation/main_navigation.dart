@@ -4,6 +4,7 @@ import '../../core/models/user_type.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/bus_service.dart';
 import '../home/home_page.dart';
+import '../bookings/bookings_page.dart';
 import '../admin/management_page.dart';
 import '../admin/analytics_page.dart';
 import '../profile/profile_page.dart';
@@ -25,7 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
       case UserType.student:
         return [
           HomePage(userType: widget.userType),
-          const TrackingPage(),
+          const BookingsPage(),
           const SchedulePage(),
           const ProfilePage(),
         ];
@@ -84,9 +85,9 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.location_on_outlined),
-            selectedIcon: Icon(Icons.location_on_rounded),
-            label: 'Track',
+            icon: Icon(Icons.confirmation_number_outlined),
+            selectedIcon: Icon(Icons.confirmation_number_rounded),
+            label: 'Bookings',
           ),
           NavigationDestination(
             icon: Icon(Icons.schedule_outlined),
@@ -146,45 +147,6 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
         ];
     }
-  }
-}
-
-// Placeholder pages - you can implement these later
-class TrackingPage extends StatelessWidget {
-  const TrackingPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Track Bus'),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.location_on_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Bus Tracking',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Real-time bus tracking coming soon',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
