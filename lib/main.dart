@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/bus_service.dart';
 import 'core/services/theme_service.dart';
+import 'core/services/location_manager.dart';
 import 'features/auth/login_page.dart';
 
 void main() async {
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => BusService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),
+        ChangeNotifierProvider(create: (_) => LocationManager()),
       ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {

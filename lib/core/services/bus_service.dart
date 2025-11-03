@@ -264,17 +264,39 @@ class BusService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Check if user already has a booking for this bus
-      final existingBooking = await _firestore
-          .collection('bookings')
-          .where('userId', isEqualTo: user.uid)
-          .where('busId', isEqualTo: bus.id)
-          .where('status', isEqualTo: BookingStatus.confirmed.name)
-          .get();
+      // Check if user already has a booking for this bus on the same date and time slot
+      if (selectedTimeSlot != null && selectedBookingDate != null) {
+        final normalizedDate = DateTime(
+          selectedBookingDate.year,
+          selectedBookingDate.month,
+          selectedBookingDate.day,
+        );
+        
+        final existingBooking = await _firestore
+            .collection('bookings')
+            .where('userId', isEqualTo: user.uid)
+            .where('busId', isEqualTo: bus.id)
+            .where('status', isEqualTo: BookingStatus.confirmed.name)
+            .where('selectedTimeSlot', isEqualTo: selectedTimeSlot)
+            .get();
 
-      if (existingBooking.docs.isNotEmpty) {
-        debugPrint('User already has a booking for this bus');
-        return false;
+        // Check if any existing booking matches the same date
+        for (var doc in existingBooking.docs) {
+          final booking = Booking.fromMap(doc.data(), doc.id);
+          if (booking.selectedBookingDate != null) {
+            final existingDate = DateTime(
+              booking.selectedBookingDate!.year,
+              booking.selectedBookingDate!.month,
+              booking.selectedBookingDate!.day,
+            );
+            if (existingDate == normalizedDate) {
+              debugPrint('User already has a booking for this bus on ${normalizedDate.toString()} at $selectedTimeSlot');
+              _isLoading = false;
+              notifyListeners();
+              return false;
+            }
+          }
+        }
       }
 
       // Get user profile for booking details
@@ -379,17 +401,37 @@ class BusService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Check if user already has a booking for this bus
-      final existingBooking = await _firestore
-          .collection('bookings')
-          .where('userId', isEqualTo: user.uid)
-          .where('busId', isEqualTo: bus.id)
-          .where('status', isEqualTo: BookingStatus.confirmed.name)
-          .get();
+      // Check if user already has a booking for this bus on the same date and time slot
+      if (selectedTimeSlot != null && selectedBookingDate != null) {
+        final normalizedDate = DateTime(
+          selectedBookingDate.year,
+          selectedBookingDate.month,
+          selectedBookingDate.day,
+        );
+        
+        final existingBooking = await _firestore
+            .collection('bookings')
+            .where('userId', isEqualTo: user.uid)
+            .where('busId', isEqualTo: bus.id)
+            .where('status', isEqualTo: BookingStatus.confirmed.name)
+            .where('selectedTimeSlot', isEqualTo: selectedTimeSlot)
+            .get();
 
-      if (existingBooking.docs.isNotEmpty) {
-        debugPrint('User already has a booking for this bus');
-        return false;
+        // Check if any existing booking matches the same date
+        for (var doc in existingBooking.docs) {
+          final booking = Booking.fromMap(doc.data(), doc.id);
+          if (booking.selectedBookingDate != null) {
+            final existingDate = DateTime(
+              booking.selectedBookingDate!.year,
+              booking.selectedBookingDate!.month,
+              booking.selectedBookingDate!.day,
+            );
+            if (existingDate == normalizedDate) {
+              debugPrint('User already has a booking for this bus on ${normalizedDate.toString()} at $selectedTimeSlot');
+              return false;
+            }
+          }
+        }
       }
 
       // Get user profile for booking details

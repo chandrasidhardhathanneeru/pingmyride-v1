@@ -382,15 +382,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: bus.hasAvailableSeats 
-                      ? Colors.green.withValues(alpha: 0.15) 
-                      : Colors.red.withValues(alpha: 0.15),
+                    color: Colors.blue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${bus.availableSeats}/${bus.capacity} seats',
+                    '${bus.capacity} seats',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: bus.hasAvailableSeats ? Colors.green.shade700 : Colors.red.shade700,
+                      color: Colors.blue.shade700,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -423,7 +421,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                   const SizedBox(width: 8),
                   Text(
-                    'Duration: ${route.estimatedDuration}',
+                    'Duration: ${route.estimatedDuration} min',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -437,7 +435,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                 const SizedBox(width: 8),
                 Text(
-                  bus.driverName,
+                  'Driver: ${bus.driverName}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -448,20 +446,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: bus.hasAvailableSeats 
-                  ? () => _showBookingConfirmationDialog(bus, route, busService)
-                  : null,
+                onPressed: () => _showBookingConfirmationDialog(bus, route, busService),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: bus.hasAvailableSeats ? AppTheme.primaryColor : Colors.grey,
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
-                  bus.hasAvailableSeats ? 'Book Now' : 'Fully Booked',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                child: const Text(
+                  'Book Now',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -533,7 +529,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                   const SizedBox(width: 8),
                   Text(
-                    'Duration: ${route.estimatedDuration}',
+                    'Duration: ${route.estimatedDuration} min',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -696,12 +692,35 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           return dates;
         }
         
+        // Get already booked time slots for the selected date
+        Set<String> getBookedTimeSlotsForDate(DateTime date) {
+          final normalizedDate = normalizeDate(date);
+          final bookedSlots = <String>{};
+          
+          for (var booking in busService.confirmedBookings) {
+            if (booking.busId == bus.id && 
+                booking.selectedBookingDate != null &&
+                booking.selectedTimeSlot != null) {
+              final bookingDate = normalizeDate(booking.selectedBookingDate!);
+              if (bookingDate == normalizedDate) {
+                bookedSlots.add(booking.selectedTimeSlot!);
+              }
+            }
+          }
+          
+          return bookedSlots;
+        }
+        
         final availableDates = getAvailableDates();
         
         return StatefulBuilder(
           builder: (context, setState) {
             final selectedDayName = _getDayOfWeek(selectedDate.weekday);
             final isBusRunningOnSelectedDay = busTiming.daysOfWeek.contains(selectedDayName);
+            final bookedTimeSlots = getBookedTimeSlotsForDate(selectedDate);
+            final availableTimings = busTiming.timings
+                .where((timing) => !bookedTimeSlots.contains(timing.time))
+                .toList();
             
             return AlertDialog(
               title: const Text('Select Date & Time'),
@@ -802,7 +821,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    ...busTiming.timings.map((timing) {
+                    if (availableTimings.isEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.grey[600]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'No available time slots for this date. You have already booked all available slots.',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      ...availableTimings.map((timing) {
                       final isSelected = selectedTimeSlot == timing.time;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -854,6 +895,55 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ),
                       );
                     }).toList(),
+                    ],
+                    if (bookedTimeSlots.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Already Booked:',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...bookedTimeSlots.map((timeSlot) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    timeSlot,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'BOOKED',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ],
                     const SizedBox(height: 8),
                     const Divider(),
                     const SizedBox(height: 8),
@@ -902,7 +992,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 const SizedBox(height: 8),
                 if (route != null) ...[
                   Text('Route: ${route.routeName}'),
-                  Text('Duration: ${route.estimatedDuration}'),
+                  Text('Duration: ${route.estimatedDuration} min'),
                   const SizedBox(height: 8),
                 ],
                 Text('Driver: ${bus.driverName}'),
@@ -1089,7 +1179,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
-  Future<void> _bookBus(Bus bus, BusService busService) async {
+  Future<void> _bookBus(Bus bus, BusService busService, String selectedTimeSlot, DateTime selectedDate) async {
     final route = busService.getRouteById(bus.routeId);
     if (route == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1105,19 +1195,35 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _showLoadingDialog('Booking bus...');
     
     try {
-      await busService.bookBus(bus, route);
-      Navigator.of(context).pop(); // Close loading dialog
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Successfully booked ${bus.busNumber}!'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
+      final success = await busService.bookBus(
+        bus, 
+        route, 
+        selectedTimeSlot: selectedTimeSlot,
+        selectedBookingDate: selectedDate,
       );
       
-      // Switch to bookings tab to show the new booking
-      _tabController.animateTo(1);
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully booked ${bus.busNumber}!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Switch to bookings tab to show the new booking
+        _tabController.animateTo(1);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You already have a booking for this bus on the selected date and time slot.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
       
     } catch (e) {
       Navigator.of(context).pop(); // Close loading dialog

@@ -77,9 +77,9 @@ class _PaymentPageState extends State<PaymentPage> {
           Navigator.of(context).pop(false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Booking failed. Please contact support.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              content: Text('Booking failed. You may already have a booking for this bus on the selected date and time slot. Your payment will be refunded.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
             ),
           );
         }
@@ -247,7 +247,7 @@ class _PaymentPageState extends State<PaymentPage> {
                           _buildInfoRow(
                             Icons.access_time,
                             'Duration',
-                            widget.route.estimatedDuration,
+                            '${widget.route.estimatedDuration} min',
                           ),
                           const SizedBox(height: 8),
                           _buildInfoRow(
@@ -258,8 +258,8 @@ class _PaymentPageState extends State<PaymentPage> {
                           const SizedBox(height: 8),
                           _buildInfoRow(
                             Icons.event_seat,
-                            'Available Seats',
-                            '${widget.bus.availableSeats}',
+                            'Bus Capacity',
+                            '${widget.bus.capacity} seats per timeslot',
                           ),
                           const SizedBox(height: 12),
                           Container(
