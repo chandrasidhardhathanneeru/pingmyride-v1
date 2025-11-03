@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/auth_service.dart';
@@ -7,6 +8,7 @@ import '../../core/services/bus_service.dart';
 import '../../core/models/user_type.dart';
 import '../../core/models/booking.dart';
 import '../auth/login_page.dart';
+import '../bookings/bookings_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -190,8 +192,61 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.help_outline,
                         label: 'Help & Support',
                         value: 'Contact Support',
-                        onTap: () {
-                          _showSupportDialog(context);
+                        onTap: () async {
+                          final TextEditingController controller = TextEditingController();
+                          final phone = '917204940447';
+                          final authService = Provider.of<AuthService>(context, listen: false);
+                          final userName = _userProfile?['name'] ?? 'User';
+                          final userEmail = _userProfile?['email'] ?? authService.currentUserEmail ?? '';
+                          final userPhone = _userProfile?['phone'] ?? 'Not provided';
+                          final userType = authService.currentUserType?.label ?? 'Unknown';
+
+                          final result = await showDialog<String>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Describe your issue'),
+                                content: TextField(
+                                  controller: controller,
+                                  maxLines: 3,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Enter your issue here...',
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, controller.text.trim()),
+                                    child: const Text('Send'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (result != null && result.isNotEmpty) {
+                            final template = '''*🚨 App Issue Report*
+*Issue Description:*
+$result
+
+*👤 User Details:*
+*Name:* $userName
+*Email:* $userEmail
+*Phone:* $userPhone
+*User Type:* $userType''';
+                            final message = Uri.encodeComponent(template);
+                            final whatsappUrl = 'https://wa.me/$phone?text=$message';
+                            final uri = Uri.parse(whatsappUrl);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not open WhatsApp.')),
+                              );
+                            }
+                          }
                         },
                       ),
                       _InfoItem(
@@ -303,7 +358,16 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             InkWell(
-              onTap: () => _showBookingsDialog(context, 'All Bookings', totalBookings, busService),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookingsListPage(
+                    title: 'All Bookings',
+                    bookings: totalBookings,
+                    accentColor: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -322,7 +386,16 @@ class _ProfilePageState extends State<ProfilePage> {
               color: Theme.of(context).dividerColor,
             ),
             InkWell(
-              onTap: () => _showBookingsDialog(context, 'Active Bookings', activeBookings, busService),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookingsListPage(
+                    title: 'Active Bookings',
+                    bookings: activeBookings,
+                    accentColor: Colors.green,
+                  ),
+                ),
+              ),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -341,7 +414,16 @@ class _ProfilePageState extends State<ProfilePage> {
               color: Theme.of(context).dividerColor,
             ),
             InkWell(
-              onTap: () => _showBookingsDialog(context, 'Cancelled Bookings', cancelledBookings, busService),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookingsListPage(
+                    title: 'Cancelled Bookings',
+                    bookings: cancelledBookings,
+                    accentColor: Colors.red,
+                  ),
+                ),
+              ),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.all(8),
