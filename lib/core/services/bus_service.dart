@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/bus.dart';
 import '../models/bus_route.dart';
 import '../models/booking.dart';
+import '../models/bus_timing.dart';
 
 class BusService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -12,11 +13,13 @@ class BusService extends ChangeNotifier {
   List<Bus> _buses = [];
   List<BusRoute> _routes = [];
   List<Booking> _userBookings = [];
+  List<BusTiming> _busTimings = [];
   bool _isLoading = false;
 
   List<Bus> get buses => _buses;
   List<BusRoute> get routes => _routes;
   List<Booking> get userBookings => _userBookings;
+  List<BusTiming> get busTimings => _busTimings;
   bool get isLoading => _isLoading;
 
   // Bus operations
@@ -240,6 +243,7 @@ class BusService extends ChangeNotifier {
       fetchBuses(),
       fetchRoutes(),
       fetchUserBookings(),
+      fetchBusTimings(),
     ]);
   }
 
@@ -566,5 +570,116 @@ class BusService extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  // Bus Timing operations
+  Future<bool> addBusTiming({
+    required String busId,
+    required String routeId,
+    required List<TimingEntry> timings,
+    required List<String> daysOfWeek,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final docRef = await _firestore.collection('bus_timings').add({
+        'busId': busId,
+        'routeId': routeId,
+        'timings': timings.map((t) => t.toMap()).toList(),
+        'daysOfWeek': daysOfWeek,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('Bus timing added with ID: ${docRef.id}');
+      await fetchBusTimings(); // Refresh the list
+      return true;
+    } catch (e) {
+      debugPrint('Error adding bus timing: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateBusTiming(BusTiming timing) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _firestore.collection('bus_timings').doc(timing.id).update({
+        ...timing.toMap(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await fetchBusTimings(); // Refresh the list
+      return true;
+    } catch (e) {
+      debugPrint('Error updating bus timing: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteBusTiming(String timingId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _firestore.collection('bus_timings').doc(timingId).delete();
+      await fetchBusTimings(); // Refresh the list
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting bus timing: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchBusTimings() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final querySnapshot = await _firestore
+          .collection('bus_timings')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      _busTimings = querySnapshot.docs
+          .map((doc) => BusTiming.fromMap(doc.data(), doc.id))
+          .toList();
+      
+      debugPrint('Fetched ${_busTimings.length} bus timings');
+    } catch (e) {
+      debugPrint('Error fetching bus timings: $e');
+      _busTimings = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Get timing by bus ID
+  BusTiming? getTimingByBusId(String busId) {
+    try {
+      return _busTimings.firstWhere((timing) => timing.busId == busId && timing.isActive);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get all timings for a route
+  List<BusTiming> getTimingsByRouteId(String routeId) {
+    return _busTimings
+        .where((timing) => timing.routeId == routeId && timing.isActive)
+        .toList();
   }
 }

@@ -9,6 +9,8 @@ import '../../core/models/user_type.dart';
 import '../../core/models/booking.dart';
 import '../auth/login_page.dart';
 import '../bookings/bookings_list_page.dart';
+import '../admin/bus_timing_page.dart';
+import '../admin/management_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -167,6 +169,22 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildSectionHeader(context, 'My Statistics'),
                     const SizedBox(height: 12),
                     _buildStatsCard(context, busService),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Statistics Section (for admins)
+                  if (userType == UserType.admin) ...[
+                    _buildSectionHeader(context, 'System Overview'),
+                    const SizedBox(height: 12),
+                    _buildAdminStatsCard(context, busService),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Quick Actions (for admins)
+                  if (userType == UserType.admin) ...[
+                    _buildSectionHeader(context, 'Quick Actions'),
+                    const SizedBox(height: 12),
+                    _buildAdminQuickActions(context),
                     const SizedBox(height: 24),
                   ],
 
@@ -466,6 +484,191 @@ $result
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
+    );
+  }
+
+  Widget _buildAdminStatsCard(BuildContext context, BusService busService) {
+    final totalBuses = busService.buses.length;
+    final activeBuses = busService.buses.where((b) => b.isActive).length;
+    final totalRoutes = busService.routes.length;
+    final totalTimings = busService.busTimings.length;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  context,
+                  icon: Icons.directions_bus,
+                  label: 'Total Buses',
+                  value: totalBuses.toString(),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Theme.of(context).dividerColor,
+                ),
+                _buildStatItem(
+                  context,
+                  icon: Icons.check_circle,
+                  label: 'Active Buses',
+                  value: activeBuses.toString(),
+                  color: Colors.green,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  context,
+                  icon: Icons.route,
+                  label: 'Routes',
+                  value: totalRoutes.toString(),
+                  color: Colors.blue,
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Theme.of(context).dividerColor,
+                ),
+                _buildStatItem(
+                  context,
+                  icon: Icons.schedule,
+                  label: 'Timings',
+                  value: totalTimings.toString(),
+                  color: Colors.orange,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminQuickActions(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.directions_bus,
+                  size: 20,
+                  color: Colors.blue,
+                ),
+              ),
+              title: const Text('Manage Buses'),
+              subtitle: const Text('Add, edit or remove buses'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManagementPage(initialTab: 0),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.route,
+                  size: 20,
+                  color: Colors.green,
+                ),
+              ),
+              title: const Text('Manage Routes'),
+              subtitle: const Text('Configure bus routes and stops'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManagementPage(initialTab: 1),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.schedule,
+                  size: 20,
+                  color: Colors.orange,
+                ),
+              ),
+              title: const Text('Bus Timings'),
+              subtitle: const Text('Set up bus schedules and timings'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const BusTimingPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.refresh,
+                  size: 20,
+                  color: Colors.purple,
+                ),
+              ),
+              title: const Text('Refresh Data'),
+              subtitle: const Text('Reload all system data'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final busService = Provider.of<BusService>(context, listen: false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Refreshing data...')),
+                );
+                await busService.initialize();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Data refreshed successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

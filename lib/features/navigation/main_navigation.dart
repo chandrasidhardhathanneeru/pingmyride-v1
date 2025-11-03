@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/services/bus_service.dart';
 import '../home/home_page.dart';
 import '../admin/management_page.dart';
+import '../admin/analytics_page.dart';
 import '../profile/profile_page.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -187,36 +188,203 @@ class TrackingPage extends StatelessWidget {
   }
 }
 
-class SchedulePage extends StatelessWidget {
+class SchedulePage extends StatefulWidget {
   const SchedulePage({super.key});
+
+  @override
+  State<SchedulePage> createState() => _SchedulePageState();
+}
+
+class _SchedulePageState extends State<SchedulePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<BusService>(context, listen: false).fetchBusTimings();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Schedule'),
+        title: const Text('Bus Schedule'),
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Provider.of<BusService>(context, listen: false).fetchBusTimings();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Schedule refreshed'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh schedules',
+          ),
+        ],
       ),
-      body: Center(
+      body: Consumer<BusService>(
+        builder: (context, busService, child) {
+          if (busService.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (busService.busTimings.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.schedule_outlined,
+                    size: 80,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No schedules available',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Bus timings will appear here once set by admin',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: busService.busTimings.length,
+            itemBuilder: (context, index) {
+              final timing = busService.busTimings[index];
+              final bus = busService.getBusById(timing.busId);
+              final route = busService.getRouteById(timing.routeId);
+              
+              return _buildScheduleCard(context, timing, bus, route);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildScheduleCard(BuildContext context, timing, bus, route) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.schedule_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    bus?.busNumber ?? 'N/A',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        route?.routeName ?? 'Unknown Route',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (bus != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Driver: ${bus.driverName}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            Text(
-              'Bus Schedule',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const Text(
+              'Timings',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'View bus schedules and timings',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ...timing.timings.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 18,
+                    color: Theme.of(context).primaryColor,
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      entry.stopName,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  Text(
+                    entry.time,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: timing.daysOfWeek.map<Widget>((day) => Text(
+                      '${day.substring(0, 3)}${timing.daysOfWeek.last != day ? ',' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    )).toList(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -301,42 +469,4 @@ class StudentsPage extends StatelessWidget {
   }
 }
 
-class AnalyticsPage extends StatelessWidget {
-  const AnalyticsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analytics'),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Analytics Dashboard',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'View system analytics and reports',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ProfilePage moved to lib/features/profile/profile_page.dart
+// All pages moved to their respective feature folders

@@ -12,6 +12,9 @@ import '../../core/services/theme_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/login_page.dart';
 import '../payment/payment_page.dart';
+import '../admin/management_page.dart';
+import '../admin/bus_timing_page.dart';
+import '../admin/analytics_page.dart';
 
 class HomePage extends StatefulWidget {
   final UserType userType;
@@ -843,33 +846,100 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     switch (userType) {
       case UserType.student:
         return [
-          _buildActionCard('Track Bus', Icons.location_on, Colors.blue),
-          _buildActionCard('Bus Schedule', Icons.schedule, Colors.green),
-          _buildActionCard('Notifications', Icons.notifications, Colors.orange),
-          _buildActionCard('Profile', Icons.person, Colors.purple),
+          _buildActionCard('Track Bus', Icons.location_on, Colors.blue, () {}),
+          _buildActionCard('Bus Schedule', Icons.schedule, Colors.green, () {}),
+          _buildActionCard('Notifications', Icons.notifications, Colors.orange, () {}),
+          _buildActionCard('Profile', Icons.person, Colors.purple, () {}),
         ];
       case UserType.driver:
         return [
-          _buildActionCard('Start Route', Icons.play_arrow, Colors.green),
-          _buildActionCard('Route Info', Icons.route, Colors.blue),
-          _buildActionCard('Students', Icons.group, Colors.orange),
-          _buildActionCard('Reports', Icons.assessment, Colors.purple),
+          _buildActionCard('Start Route', Icons.play_arrow, Colors.green, () {}),
+          _buildActionCard('Route Info', Icons.route, Colors.blue, () {}),
+          _buildActionCard('Students', Icons.group, Colors.orange, () {}),
+          _buildActionCard('Reports', Icons.assessment, Colors.purple, () {}),
         ];
       case UserType.admin:
         return [
-          _buildActionCard('Manage Routes', Icons.alt_route, Colors.blue),
-          _buildActionCard('Users', Icons.group, Colors.green),
-          _buildActionCard('Analytics', Icons.analytics, Colors.orange),
-          _buildActionCard('Settings', Icons.settings, Colors.purple),
+          _buildActionCard('Manage Buses', Icons.directions_bus, Colors.blue, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ManagementPage(initialTab: 0)),
+            );
+          }),
+          _buildActionCard('Manage Routes', Icons.alt_route, Colors.green, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ManagementPage(initialTab: 1)),
+            );
+          }),
+          _buildActionCard('Bus Timings', Icons.schedule, Colors.orange, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BusTimingPage()),
+            );
+          }),
+          _buildActionCard('Analytics', Icons.analytics, Colors.purple, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AnalyticsPage()),
+            );
+          }),
+          _buildActionCard('Refresh Data', Icons.refresh, Colors.teal, () async {
+            final busService = Provider.of<BusService>(context, listen: false);
+            await busService.initialize();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Data refreshed successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          }),
+          _buildActionCard('System Info', Icons.info_outline, Colors.indigo, () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('System Information'),
+                content: Consumer<BusService>(
+                  builder: (context, busService, child) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Total Buses: ${busService.buses.length}'),
+                        Text('Active Buses: ${busService.buses.where((b) => b.isActive).length}'),
+                        Text('Total Routes: ${busService.routes.length}'),
+                        Text('Bus Timings: ${busService.busTimings.length}'),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'PingMyRide v1.0.0',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          }),
         ];
     }
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color color) {
+  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(20),
             child: Column(

@@ -6,9 +6,12 @@ import '../../core/models/bus_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/custom_button.dart';
 import '../../shared/widgets/custom_text_field.dart';
+import 'bus_timing_page.dart';
 
 class ManagementPage extends StatefulWidget {
-  const ManagementPage({super.key});
+  final int initialTab;
+  
+  const ManagementPage({super.key, this.initialTab = 0});
 
   @override
   State<ManagementPage> createState() => _ManagementPageState();
@@ -22,7 +25,11 @@ class _ManagementPageState extends State<ManagementPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2, 
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 1),
+    );
     _busService = Provider.of<BusService>(context, listen: false);
     _busService.initialize();
   }
@@ -38,6 +45,20 @@ class _ManagementPageState extends State<ManagementPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Management'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BusTimingPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.schedule),
+            tooltip: 'Bus Timings',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
