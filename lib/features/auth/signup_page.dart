@@ -354,37 +354,34 @@ class _SignUpPageState extends State<SignUpPage>
               FadeInUp(
                 duration: const Duration(milliseconds: 800),
                 delay: const Duration(milliseconds: 400),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.shade200,
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                child: Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outline,
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
                           ),
                         ),
                         child: TabBar(
                           controller: _tabController,
                           indicator: BoxDecoration(
-                            color: AppTheme.primaryColor,
-                            borderRadius: BorderRadius.circular(12),
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           indicatorPadding: const EdgeInsets.all(8),
-                          labelColor: Colors.white,
-                          unselectedLabelColor: Colors.grey.shade600,
+                          labelColor: Theme.of(context).colorScheme.onPrimary,
+                          unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
                           tabs: UserType.values
                               .map((type) => Tab(
                                     icon: Icon(_getIconForUserType(type)),

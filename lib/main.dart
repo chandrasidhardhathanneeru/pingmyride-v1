@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/bus_service.dart';
+import 'core/services/theme_service.dart';
 import 'features/auth/login_page.dart';
 
 void main() async {
@@ -24,14 +25,19 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => BusService()),
+        ChangeNotifierProvider(create: (_) => ThemeService()),
       ],
-      child: MaterialApp(
-        title: 'PingMyRide',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system, // Follows system theme preference
-        home: const LoginPage(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return MaterialApp(
+            title: 'PingMyRide',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeService.themeMode,
+            home: const LoginPage(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../../core/models/bus_route.dart';
 import '../../core/models/booking.dart';
 import '../../core/services/bus_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/theme_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,6 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _showWelcomeCard = true;
 
   @override
   void initState() {
@@ -29,6 +31,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     // Initialize bus service data when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<BusService>(context, listen: false).initialize();
+    });
+    
+    // Hide welcome card after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showWelcomeCard = false;
+        });
+      }
     });
   }
 
@@ -48,29 +59,45 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () {},
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) async {
-              if (value == 'logout') {
-                await _showLogoutConfirmationDialog();
-              }
+          Consumer<ThemeService>(
+            builder: (context, themeService, child) {
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) async {
+                  if (value == 'theme') {
+                    await themeService.toggleTheme();
+                  } else if (value == 'logout') {
+                    await _showLogoutConfirmationDialog();
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'theme',
+                    child: Row(
+                      children: [
+                        Icon(
+                          themeService.isDarkMode 
+                            ? Icons.light_mode 
+                            : Icons.dark_mode,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(themeService.isDarkMode ? 'Light Mode' : 'Dark Mode'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Logout', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -85,8 +112,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       builder: (context, busService, child) {
         return Column(
           children: [
-            _buildWelcomeCard(),
-            const SizedBox(height: 24),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+              child: AnimatedOpacity(
+                opacity: _showWelcomeCard ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                child: _showWelcomeCard ? _buildWelcomeCard() : const SizedBox.shrink(),
+              ),
+            ),
+            SizedBox(height: _showWelcomeCard ? 24 : 8),
             TabBar(
               controller: _tabController,
               labelColor: AppTheme.primaryColor,
@@ -249,8 +285,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildWelcomeCard(),
-          const SizedBox(height: 24),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            child: AnimatedOpacity(
+              opacity: _showWelcomeCard ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+              child: _showWelcomeCard ? _buildWelcomeCard() : const SizedBox.shrink(),
+            ),
+          ),
+          SizedBox(height: _showWelcomeCard ? 24 : 8),
           Text(
             'Quick Actions',
             style: const TextStyle(
@@ -273,49 +318,50 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildWelcomeCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.8),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome back!',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You are logged in as ${widget.userType.label}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
+              ),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome back!',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You are logged in as ${widget.userType.label}',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildBusCard(Bus bus, BusRoute? route, BusService busService) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -324,60 +370,76 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               children: [
                 Text(
                   bus.busNumber,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: bus.hasAvailableSeats ? Colors.green.shade100 : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(20),
+                    color: bus.hasAvailableSeats 
+                      ? Colors.green.withValues(alpha: 0.15) 
+                      : Colors.red.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${bus.availableSeats}/${bus.capacity} seats',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: bus.hasAvailableSeats ? Colors.green.shade700 : Colors.red.shade700,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             if (route != null) ...[
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.location_on, 
+                    size: 18, 
+                    color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Route: ${route.routeName}',
-                      style: const TextStyle(color: Colors.grey),
+                      route.routeName,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.access_time, 
+                    size: 18, 
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                  const SizedBox(width: 8),
                   Text(
-                    'Departure: ${route.estimatedDuration}',
-                    style: const TextStyle(color: Colors.grey),
+                    'Duration: ${route.estimatedDuration}',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
             ],
-            const SizedBox(height: 8),
-            Text(
-              'Driver: ${bus.driverName}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            Row(
+              children: [
+                Icon(Icons.person_outline, 
+                  size: 18, 
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                const SizedBox(width: 8),
+                Text(
+                  bus.driverName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -409,11 +471,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final route = bus != null ? busService.getRouteById(bus.routeId) : null;
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -422,63 +482,68 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               children: [
                 Text(
                   bus?.busNumber ?? 'Unknown Bus',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(booking.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    color: _getStatusColor(booking.status).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     booking.status.toString().split('.').last.toUpperCase(),
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _getStatusColor(booking.status),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             if (route != null) ...[
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.location_on, 
+                    size: 18, 
+                    color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Route: ${route.routeName}',
-                      style: const TextStyle(color: Colors.grey),
+                      route.routeName,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.access_time, 
+                    size: 18, 
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                  const SizedBox(width: 8),
                   Text(
                     'Duration: ${route.estimatedDuration}',
-                    style: const TextStyle(color: Colors.grey),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
             ],
-            const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today, 
+                  size: 18, 
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                const SizedBox(width: 8),
                 Text(
                   'Booked: ${_formatDate(booking.createdAt)}',
-                  style: const TextStyle(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -766,36 +831,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildActionCard(String title, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(25),
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Icon(icon, color: color, size: 28),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -809,8 +861,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ],
             ),
           ),
-        ),
-      ),
-    );
+      )
+        );
   }
 }

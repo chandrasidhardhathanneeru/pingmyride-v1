@@ -36,10 +36,10 @@ class CustomButton extends StatelessWidget {
                   : (icon != null ? Icon(icon) : const SizedBox.shrink()),
               label: Text(text),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.primaryColor),
-                foregroundColor: AppTheme.primaryColor,
+                side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             )
@@ -57,10 +57,10 @@ class CustomButton extends StatelessWidget {
                   : (icon != null ? Icon(icon) : const SizedBox.shrink()),
               label: Text(text),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
