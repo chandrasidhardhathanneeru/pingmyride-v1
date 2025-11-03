@@ -263,30 +263,6 @@ class _SignUpPageState extends State<SignUpPage>
             },
             icon: _isLoading ? null : _getIconForUserType(userType),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Already have an account? ',
-                style: TextStyle(color: AppTheme.secondaryColor),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                  );
-                },
-                child: Text(
-                  'Sign In',
-                  style: TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -310,20 +286,11 @@ class _SignUpPageState extends State<SignUpPage>
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryColor.withOpacity(0.1),
-                            AppTheme.primaryColor.withOpacity(0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        borderRadius: BorderRadius.circular(20),
+                        image: const DecorationImage(
+                          image: AssetImage('assets/icons/app_icon.png'),
+                          fit: BoxFit.cover,
                         ),
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: Icon(
-                        Icons.directions_bus,
-                        size: 50,
-                        color: AppTheme.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -379,7 +346,8 @@ class _SignUpPageState extends State<SignUpPage>
                             color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          indicatorPadding: const EdgeInsets.all(8),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           labelColor: Theme.of(context).colorScheme.onPrimary,
                           unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
                           tabs: UserType.values
@@ -405,6 +373,30 @@ class _SignUpPageState extends State<SignUpPage>
                     ],
                   ),
                 ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Already have an account? ',
+                    style: TextStyle(color: AppTheme.secondaryColor),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                      );
+                    },
+                    child: Text(
+                      'Sign In',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

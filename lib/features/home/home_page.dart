@@ -10,6 +10,7 @@ import '../../core/services/bus_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/theme_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../auth/login_page.dart';
 
 class HomePage extends StatefulWidget {
   final UserType userType;
@@ -785,22 +786,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     try {
       _showLoadingDialog('Logging out...');
       await Provider.of<AuthService>(context, listen: false).logout();
-      Navigator.of(context).pop(); // Close loading dialog
       
-      // Navigate to login screen
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pop(); // Close loading dialog
+        
+        // Navigate to login screen and clear all previous routes
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+        );
       }
     } catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to logout: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to logout: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 

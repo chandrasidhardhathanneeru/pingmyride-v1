@@ -286,7 +286,8 @@ class _LoginPageState extends State<LoginPage>
                             color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          indicatorPadding: const EdgeInsets.all(8),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           labelColor: Theme.of(context).colorScheme.onPrimary,
                           unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
                           tabs: UserType.values
