@@ -552,6 +552,54 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
               ],
             ),
+            if (booking.selectedBookingDate != null || booking.selectedTimeSlot != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (booking.selectedBookingDate != null) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 16, color: AppTheme.primaryColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_formatDateOnly(booking.selectedBookingDate!)} (${_getDayOfWeek(booking.selectedBookingDate!.weekday)})',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (booking.selectedTimeSlot != null) const SizedBox(height: 6),
+                    ],
+                    if (booking.selectedTimeSlot != null)
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 16, color: AppTheme.primaryColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            booking.selectedTimeSlot!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
             if (booking.status == BookingStatus.confirmed) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -595,29 +643,348 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _showBookingConfirmationDialog(Bus bus, BusRoute? route, BusService busService) {
+    // First show time slot selection
+    _showTimeSlotSelectionDialog(bus, route, busService);
+  }
+
+  void _showTimeSlotSelectionDialog(Bus bus, BusRoute? route, BusService busService) {
+    final busTiming = busService.getTimingByBusId(bus.id);
+    
+    if (busTiming == null || busTiming.timings.isEmpty) {
+      // No timings available, show error
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('No Timings Available'),
+            content: const Text('This bus does not have any scheduled timings. Please contact the administrator or try a different bus.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String? selectedTimeSlot;
+        
+        // Normalize date to remove time component
+        DateTime normalizeDate(DateTime date) {
+          return DateTime(date.year, date.month, date.day);
+        }
+        
+        DateTime selectedDate = normalizeDate(DateTime.now());
+        
+        // Get available dates (next 14 days that match the bus schedule)
+        List<DateTime> getAvailableDates() {
+          List<DateTime> dates = [];
+          DateTime current = normalizeDate(DateTime.now());
+          for (int i = 0; i < 14; i++) {
+            DateTime date = current.add(Duration(days: i));
+            String dayName = _getDayOfWeek(date.weekday);
+            if (busTiming.daysOfWeek.contains(dayName)) {
+              dates.add(date);
+            }
+          }
+          return dates;
+        }
+        
+        final availableDates = getAvailableDates();
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final selectedDayName = _getDayOfWeek(selectedDate.weekday);
+            final isBusRunningOnSelectedDay = busTiming.daysOfWeek.contains(selectedDayName);
+            
+            return AlertDialog(
+              title: const Text('Select Date & Time'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Bus: ${bus.busNumber}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    if (route != null) ...[
+                      Text('Route: ${route.routeName}'),
+                      const SizedBox(height: 8),
+                    ],
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Select Date:',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<DateTime>(
+                          isExpanded: true,
+                          value: selectedDate,
+                          items: availableDates.map((date) {
+                            return DropdownMenuItem<DateTime>(
+                              value: date,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 16,
+                                    color: _isToday(date) ? AppTheme.primaryColor : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_formatDateOnly(date)} (${_getDayOfWeek(date.weekday)})',
+                                    style: TextStyle(
+                                      fontWeight: _isToday(date) ? FontWeight.bold : FontWeight.normal,
+                                      color: _isToday(date) ? AppTheme.primaryColor : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (DateTime? newDate) {
+                            if (newDate != null) {
+                              setState(() {
+                                selectedDate = DateTime(newDate.year, newDate.month, newDate.day);
+                                selectedTimeSlot = null; // Reset time slot when date changes
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!isBusRunningOnSelectedDay) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Bus not scheduled for $selectedDayName',
+                                style: const TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Text(
+                      'Operating Days:',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(busTiming.daysOfWeek.join(', ')),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Available Time Slots:',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...busTiming.timings.map((timing) {
+                      final isSelected = selectedTimeSlot == timing.time;
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        color: isSelected 
+                          ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                          : null,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              selectedTimeSlot = timing.time;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                                  color: isSelected ? AppTheme.primaryColor : Colors.grey,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        timing.time,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: isSelected ? AppTheme.primaryColor : null,
+                                        ),
+                                      ),
+                                      if (timing.stopName.isNotEmpty)
+                                        Text(
+                                          timing.stopName,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text('Booking Fee: ₹50.00'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedTimeSlot == null
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        _showFinalBookingConfirmation(bus, route, busService, selectedTimeSlot!, selectedDate);
+                      },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: selectedTimeSlot == null ? Colors.grey : AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showFinalBookingConfirmation(Bus bus, BusRoute? route, BusService busService, String selectedTimeSlot, DateTime selectedDate) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirm Booking'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Bus: ${bus.busNumber}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              if (route != null) ...[
-                Text('Route: ${route.routeName}'),
-                Text('Duration: ${route.estimatedDuration}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bus: ${bus.busNumber}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
+                if (route != null) ...[
+                  Text('Route: ${route.routeName}'),
+                  Text('Duration: ${route.estimatedDuration}'),
+                  const SizedBox(height: 8),
+                ],
+                Text('Driver: ${bus.driverName}'),
+                Text('Available Seats: ${bus.availableSeats}'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.primaryColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Booking Date',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_formatDateOnly(selectedDate)} (${_getDayOfWeek(selectedDate.weekday)})',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, color: AppTheme.primaryColor, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Pickup Time',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  selectedTimeSlot,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Booking Fee: ₹50.00', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                const Text(
+                  'Proceed to payment to confirm your booking.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
               ],
-              Text('Driver: ${bus.driverName}'),
-              Text('Available Seats: ${bus.availableSeats}'),
-              const SizedBox(height: 16),
-              const Text('Booking Fee: ₹50.00'),
-              const SizedBox(height: 8),
-              const Text('Proceed to payment to confirm your booking.'),
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -627,7 +994,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _navigateToPayment(bus, route);
+                _navigateToPayment(bus, route, selectedTimeSlot, selectedDate);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
@@ -639,6 +1006,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         );
       },
     );
+  }
+
+  String _getDayOfWeek(int weekday) {
+    switch (weekday) {
+      case 1: return 'Monday';
+      case 2: return 'Tuesday';
+      case 3: return 'Wednesday';
+      case 4: return 'Thursday';
+      case 5: return 'Friday';
+      case 6: return 'Saturday';
+      case 7: return 'Sunday';
+      default: return 'Unknown';
+    }
+  }
+
+  String _formatDateOnly(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
   }
 
   void _showCancelBookingDialog(Booking booking, BusService busService) {
@@ -670,7 +1059,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Future<void> _navigateToPayment(Bus bus, BusRoute? route) async {
+  Future<void> _navigateToPayment(Bus bus, BusRoute? route, String selectedTimeSlot, DateTime selectedDate) async {
     if (route == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -685,7 +1074,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (context) => PaymentPage(bus: bus, route: route),
+        builder: (context) => PaymentPage(
+          bus: bus, 
+          route: route,
+          selectedTimeSlot: selectedTimeSlot,
+          selectedDate: selectedDate,
+        ),
       ),
     );
 

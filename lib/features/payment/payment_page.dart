@@ -10,11 +10,15 @@ import '../../core/theme/app_theme.dart';
 class PaymentPage extends StatefulWidget {
   final Bus bus;
   final BusRoute route;
+  final String selectedTimeSlot;
+  final DateTime selectedDate;
 
   const PaymentPage({
     super.key,
     required this.bus,
     required this.route,
+    required this.selectedTimeSlot,
+    required this.selectedDate,
   });
 
   @override
@@ -55,6 +59,8 @@ class _PaymentPageState extends State<PaymentPage> {
         paymentId: response.paymentId ?? '',
         orderId: response.orderId ?? '',
         signature: response.signature ?? '',
+        selectedTimeSlot: widget.selectedTimeSlot,
+        selectedBookingDate: widget.selectedDate,
       );
 
       if (mounted) {
@@ -255,6 +261,75 @@ class _PaymentPageState extends State<PaymentPage> {
                             'Available Seats',
                             '${widget.bus.availableSeats}',
                           ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppTheme.primaryColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Booking Date',
+                                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _formatDate(widget.selectedDate),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              color: AppTheme.primaryColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                const Divider(height: 1),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time, color: AppTheme.primaryColor, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Pickup Time',
+                                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            widget.selectedTimeSlot,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              color: AppTheme.primaryColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -430,5 +505,23 @@ class _PaymentPageState extends State<PaymentPage> {
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final weekday = _getDayOfWeek(date.weekday);
+    return '${date.day}/${date.month}/${date.year} ($weekday)';
+  }
+
+  String _getDayOfWeek(int weekday) {
+    switch (weekday) {
+      case 1: return 'Mon';
+      case 2: return 'Tue';
+      case 3: return 'Wed';
+      case 4: return 'Thu';
+      case 5: return 'Fri';
+      case 6: return 'Sat';
+      case 7: return 'Sun';
+      default: return '';
+    }
   }
 }

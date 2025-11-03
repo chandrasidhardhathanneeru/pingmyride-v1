@@ -16,6 +16,11 @@ class Booking {
   final DateTime? cancelledAt;
   final DateTime createdAt;
   
+  // Time slot details
+  final String? selectedTimeSlot; // e.g., "08:30 AM"
+  final String? selectedPickupTime; // e.g., "08:30 AM"
+  final DateTime? selectedBookingDate; // The date for which the booking is made
+  
   // Payment details
   final String? paymentId;
   final String? orderId;
@@ -39,6 +44,9 @@ class Booking {
     this.status = BookingStatus.confirmed,
     this.cancelledAt,
     required this.createdAt,
+    this.selectedTimeSlot,
+    this.selectedPickupTime,
+    this.selectedBookingDate,
     this.paymentId,
     this.orderId,
     this.signature,
@@ -66,6 +74,9 @@ class Booking {
       ),
       cancelledAt: map['cancelledAt']?.toDate(),
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      selectedTimeSlot: map['selectedTimeSlot'],
+      selectedPickupTime: map['selectedPickupTime'],
+      selectedBookingDate: map['selectedBookingDate']?.toDate(),
       paymentId: map['paymentId'],
       orderId: map['orderId'],
       signature: map['signature'],
@@ -90,6 +101,9 @@ class Booking {
       'status': status.name,
       'cancelledAt': cancelledAt,
       'createdAt': createdAt,
+      'selectedTimeSlot': selectedTimeSlot,
+      'selectedPickupTime': selectedPickupTime,
+      'selectedBookingDate': selectedBookingDate,
       'paymentId': paymentId,
       'orderId': orderId,
       'signature': signature,
@@ -114,6 +128,9 @@ class Booking {
     BookingStatus? status,
     DateTime? cancelledAt,
     DateTime? createdAt,
+    String? selectedTimeSlot,
+    String? selectedPickupTime,
+    DateTime? selectedBookingDate,
     String? paymentId,
     String? orderId,
     String? signature,
@@ -136,6 +153,9 @@ class Booking {
       status: status ?? this.status,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       createdAt: createdAt ?? this.createdAt,
+      selectedTimeSlot: selectedTimeSlot ?? this.selectedTimeSlot,
+      selectedPickupTime: selectedPickupTime ?? this.selectedPickupTime,
+      selectedBookingDate: selectedBookingDate ?? this.selectedBookingDate,
       paymentId: paymentId ?? this.paymentId,
       orderId: orderId ?? this.orderId,
       signature: signature ?? this.signature,

@@ -248,7 +248,7 @@ class BusService extends ChangeNotifier {
   }
 
   // Booking operations
-  Future<bool> bookBus(Bus bus, BusRoute route) async {
+  Future<bool> bookBus(Bus bus, BusRoute route, {String? selectedTimeSlot, DateTime? selectedBookingDate}) async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -297,6 +297,9 @@ class BusService extends ChangeNotifier {
         driverName: bus.driverName,
         driverPhone: bus.driverPhone,
         createdAt: DateTime.now(),
+        selectedTimeSlot: selectedTimeSlot,
+        selectedPickupTime: selectedTimeSlot,
+        selectedBookingDate: selectedBookingDate,
       );
 
       debugPrint('Creating booking for user ${user.uid} on bus ${bus.busNumber}');
@@ -358,6 +361,8 @@ class BusService extends ChangeNotifier {
     required String paymentId,
     required String orderId,
     required String signature,
+    String? selectedTimeSlot,
+    DateTime? selectedBookingDate,
   }) async {
     try {
       final user = _auth.currentUser;
@@ -407,6 +412,9 @@ class BusService extends ChangeNotifier {
         driverName: bus.driverName,
         driverPhone: bus.driverPhone,
         createdAt: DateTime.now(),
+        selectedTimeSlot: selectedTimeSlot,
+        selectedPickupTime: selectedTimeSlot,
+        selectedBookingDate: selectedBookingDate,
         paymentId: paymentId,
         orderId: orderId,
         signature: signature,

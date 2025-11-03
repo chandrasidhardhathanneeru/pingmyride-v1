@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/user_type.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
@@ -15,85 +17,85 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _formKeys = <GlobalKey<FormState>>[
-    GlobalKey<FormState>(),
-    GlobalKey<FormState>(),
-    GlobalKey<FormState>(),
-  ];
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      // Clear fields when switching tabs for better UX
-      if (!_tabController.indexIsChanging) {
-        _emailController.clear();
-        _passwordController.clear();
-        // Reset validation state
-        for (var key in _formKeys) {
-          key.currentState?.reset();
-        }
-      }
-    });
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin(UserType userType) async {
-    final formIndex = UserType.values.indexOf(userType);
-    if (!_formKeys[formIndex].currentState!.validate()) return;
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final success = await _authService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-        userType,
+      // Use Firebase Auth directly to sign in
+      final auth = FirebaseAuth.instance;
+      final firestore = FirebaseFirestore.instance;
+      
+      final credential = await auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
-      setState(() {
-        _isLoading = false;
-      });
+      if (credential.user != null) {
+        // Get user type from Firestore
+        final doc = await firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .get();
 
-      if (mounted) {
-        if (success) {
-          // Navigate to main navigation with selected user type
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => MainNavigation(userType: userType),
-            ),
+        if (doc.exists) {
+          final userData = doc.data()!;
+          final userType = UserType.values.firstWhere(
+            (type) => type.name == userData['userType'],
+            orElse: () => UserType.student,
           );
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logged in as ${userType.label}'),
-              backgroundColor: AppTheme.successColor,
-            ),
-          );
+
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (mounted) {
+            // Navigate to main navigation with detected user type
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => MainNavigation(userType: userType),
+              ),
+            );
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome back, ${userType.label}!'),
+                backgroundColor: AppTheme.successColor,
+              ),
+            );
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Invalid credentials or wrong user type for ${userType.label} login'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
+          // User document doesn't exist
+          await auth.signOut();
+          setState(() {
+            _isLoading = false;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('User account not found. Please sign up.'),
+                backgroundColor: AppTheme.errorColor,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -112,21 +114,9 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  IconData _getIconForUserType(UserType userType) {
-    switch (userType) {
-      case UserType.student:
-        return Icons.school;
-      case UserType.driver:
-        return Icons.directions_bus;
-      case UserType.admin:
-        return Icons.admin_panel_settings;
-    }
-  }
-
-  Widget _buildLoginForm(UserType userType) {
-    final formIndex = UserType.values.indexOf(userType);
+  Widget _buildLoginForm() {
     return Form(
-      key: _formKeys[formIndex],
+      key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -166,10 +156,10 @@ class _LoginPageState extends State<LoginPage>
           ),
           const SizedBox(height: 20),
           CustomButton(
-            text: 'Login as ${userType.label}',
-            onPressed: () => _handleLogin(userType),
+            text: 'Login',
+            onPressed: _handleLogin,
             isLoading: _isLoading,
-            icon: _getIconForUserType(userType),
+            icon: Icons.login,
           ),
           const SizedBox(height: 12),
           Center(
@@ -267,70 +257,9 @@ class _LoginPageState extends State<LoginPage>
                           width: 1,
                         ),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // User Type Selector Header
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: TabBar(
-                              controller: _tabController,
-                              indicator: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              labelColor: Theme.of(context).colorScheme.onPrimary,
-                              unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color,
-                              labelStyle: TextStyle(
-                                fontSize: isSmallScreen ? 12 : 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              unselectedLabelStyle: TextStyle(
-                                fontSize: isSmallScreen ? 12 : 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              tabs: UserType.values
-                                  .map((type) => Tab(
-                                        icon: Icon(
-                                          _getIconForUserType(type),
-                                          size: isSmallScreen ? 20 : 24,
-                                        ),
-                                        text: type.label,
-                                      ))
-                                  .toList(),
-                            ),
-                          ),
-                          
-                          // Login Form
-                          Padding(
-                            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // TabBarView with intrinsic sizing
-                                SizedBox(
-                                  height: isSmallScreen ? 280 : 320,
-                                  child: TabBarView(
-                                    controller: _tabController,
-                                    children: UserType.values
-                                        .map((type) => SingleChildScrollView(
-                                              child: _buildLoginForm(type),
-                                            ))
-                                        .toList(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
+                        child: _buildLoginForm(),
                       ),
                     ),
                   ),
