@@ -290,11 +290,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildStatsCard(BuildContext context, BusService busService) {
-    final totalBookings = busService.userBookings.length;
-    final activeBookings = busService.confirmedBookings.length;
+    final totalBookings = busService.userBookings;
+    final activeBookings = busService.confirmedBookings;
     final cancelledBookings = busService.userBookings
         .where((b) => b.status.name == 'cancelled')
-        .length;
+        .toList();
 
     return Card(
       child: Padding(
@@ -302,36 +302,57 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItem(
-              context,
-              icon: Icons.confirmation_number,
-              label: 'Total',
-              value: totalBookings.toString(),
-              color: Theme.of(context).colorScheme.primary,
+            InkWell(
+              onTap: () => _showBookingsDialog(context, 'All Bookings', totalBookings, busService),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: _buildStatItem(
+                  context,
+                  icon: Icons.confirmation_number,
+                  label: 'Total',
+                  value: totalBookings.length.toString(),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
             Container(
               height: 40,
               width: 1,
               color: Theme.of(context).dividerColor,
             ),
-            _buildStatItem(
-              context,
-              icon: Icons.check_circle_outline,
-              label: 'Active',
-              value: activeBookings.toString(),
-              color: Colors.green,
+            InkWell(
+              onTap: () => _showBookingsDialog(context, 'Active Bookings', activeBookings, busService),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: _buildStatItem(
+                  context,
+                  icon: Icons.check_circle_outline,
+                  label: 'Active',
+                  value: activeBookings.length.toString(),
+                  color: Colors.green,
+                ),
+              ),
             ),
             Container(
               height: 40,
               width: 1,
               color: Theme.of(context).dividerColor,
             ),
-            _buildStatItem(
-              context,
-              icon: Icons.cancel_outlined,
-              label: 'Cancelled',
-              value: cancelledBookings.toString(),
-              color: Colors.red,
+            InkWell(
+              onTap: () => _showBookingsDialog(context, 'Cancelled Bookings', cancelledBookings, busService),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: _buildStatItem(
+                  context,
+                  icon: Icons.cancel_outlined,
+                  label: 'Cancelled',
+                  value: cancelledBookings.length.toString(),
+                  color: Colors.red,
+                ),
+              ),
             ),
           ],
         ),
@@ -484,6 +505,276 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showEditDialog(BuildContext context, String field, String currentValue) {
+    final controller = TextEditingController(text: currentValue);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit ${field == 'name' ? 'Name' : 'Phone'}'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: field == 'name' ? 'Full Name' : 'Phone Number',
+              hintText: field == 'name' ? 'Enter your full name' : 'Enter your phone number',
+            ),
+            keyboardType: field == 'phone' ? TextInputType.phone : TextInputType.name,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'This field cannot be empty';
+              }
+              if (field == 'phone' && value.trim().length < 10) {
+                return 'Please enter a valid phone number';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context);
+                await _updateUserProfile(context, field, controller.text.trim());
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateUserProfile(BuildContext context, String field, String value) async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = authService.currentUser;
+
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({field: value});
+
+        // Reload profile
+        await _loadUserProfile();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${field == 'name' ? 'Name' : 'Phone'} updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showBookingsDialog(BuildContext context, String title, List<Booking> bookings, BusService busService) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              if (bookings.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No bookings found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    shrinkWrap: true,
+                    itemCount: bookings.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final booking = bookings[index];
+                      return _buildBookingCard(context, booking, busService);
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(BuildContext context, Booking booking, BusService busService) {
+    final bus = busService.getBusById(booking.busId);
+    final route = bus != null ? busService.getRouteById(bus.routeId) : null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    booking.busNumber,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(booking.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getStatusColor(booking.status),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    booking.status.label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _getStatusColor(booking.status),
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildBookingInfoRow(
+              context,
+              Icons.route,
+              booking.routeName,
+            ),
+            const SizedBox(height: 4),
+            _buildBookingInfoRow(
+              context,
+              Icons.location_on,
+              '${booking.pickupLocation} → ${booking.dropLocation}',
+            ),
+            const SizedBox(height: 4),
+            _buildBookingInfoRow(
+              context,
+              Icons.calendar_today,
+              _formatDate(booking.createdAt),
+            ),
+            if (booking.status.name == 'cancelled' && booking.cancelledAt != null) ...[
+              const SizedBox(height: 4),
+              _buildBookingInfoRow(
+                context,
+                Icons.cancel,
+                'Cancelled on ${_formatDate(booking.cancelledAt!)}',
+                color: Colors.red,
+              ),
+            ],
+            if (booking.amount != null) ...[
+              const SizedBox(height: 4),
+              _buildBookingInfoRow(
+                context,
+                Icons.payment,
+                '₹${booking.amount!.toStringAsFixed(2)}',
+                color: Colors.green,
+              ),
+            ],
+            if (route != null) ...[
+              const SizedBox(height: 4),
+              _buildBookingInfoRow(
+                context,
+                Icons.access_time,
+                'Duration: ${route.estimatedDuration}',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingInfoRow(BuildContext context, IconData icon, String text, {Color? color}) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getStatusColor(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.confirmed:
+        return Colors.green;
+      case BookingStatus.cancelled:
+        return Colors.red;
+      case BookingStatus.completed:
+        return Colors.blue;
+    }
+  }
+
+  String _formatDate(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _handleLogout(BuildContext context, AuthService authService) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -524,11 +815,13 @@ class _InfoItem {
   final String label;
   final String value;
   final VoidCallback? onTap;
+  final bool isEditable;
 
   _InfoItem({
     required this.icon,
     required this.label,
     required this.value,
     this.onTap,
+    this.isEditable = false,
   });
 }
