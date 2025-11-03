@@ -28,6 +28,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'PingMyRide',
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system, // Follows system theme preference
         home: const LoginPage(),
         debugShowCheckedModeBanner: false,
       ),
