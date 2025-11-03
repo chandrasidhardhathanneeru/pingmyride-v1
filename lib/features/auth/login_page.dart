@@ -237,7 +237,7 @@ class _LoginPageState extends State<LoginPage>
                           style: TextStyle(
                             fontSize: isSmallScreen ? 28 : 32,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         SizedBox(height: isSmallScreen ? 4 : 6),
@@ -245,7 +245,7 @@ class _LoginPageState extends State<LoginPage>
                           'Your reliable ride tracking companion',
                           style: TextStyle(
                             fontSize: isSmallScreen ? 14 : 16,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -346,7 +346,7 @@ class _LoginPageState extends State<LoginPage>
                         Text(
                           "Don't have an account?",
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                             fontSize: isSmallScreen ? 13 : 14,
                           ),
                         ),

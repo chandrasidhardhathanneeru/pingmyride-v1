@@ -116,10 +116,14 @@ class _SignUpPageState extends State<SignUpPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.white,
+        color: isSelected 
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.1) 
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isSelected ? AppTheme.primaryColor : AppTheme.secondaryColor,
+          color: isSelected 
+              ? Theme.of(context).colorScheme.primary 
+              : Theme.of(context).colorScheme.outline,
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -129,13 +133,17 @@ class _SignUpPageState extends State<SignUpPage>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100,
+              color: isSelected 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(25),
             ),
             child: Icon(
               _getIconForUserType(userType),
               size: 25,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              color: isSelected 
+                  ? Theme.of(context).colorScheme.onPrimary 
+                  : Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
           const SizedBox(height: 8),
@@ -144,7 +152,9 @@ class _SignUpPageState extends State<SignUpPage>
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 12,
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade700,
+              color: isSelected 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Theme.of(context).textTheme.bodyMedium?.color,
             ),
           ),
         ],
@@ -271,7 +281,6 @@ class _SignUpPageState extends State<SignUpPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -299,7 +308,7 @@ class _SignUpPageState extends State<SignUpPage>
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryColor,
+                        color: Theme.of(context).colorScheme.primary,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -308,7 +317,7 @@ class _SignUpPageState extends State<SignUpPage>
                       'Create your account to get started',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.secondaryColor,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -380,7 +389,7 @@ class _SignUpPageState extends State<SignUpPage>
                 children: [
                   Text(
                     'Already have an account? ',
-                    style: TextStyle(color: AppTheme.secondaryColor),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -391,7 +400,7 @@ class _SignUpPageState extends State<SignUpPage>
                     child: Text(
                       'Sign In',
                       style: TextStyle(
-                        color: AppTheme.primaryColor,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
