@@ -11,6 +11,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/theme_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/login_page.dart';
+import '../payment/payment_page.dart';
 
 class HomePage extends StatefulWidget {
   final UserType userType;
@@ -610,7 +611,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               Text('Driver: ${bus.driverName}'),
               Text('Available Seats: ${bus.availableSeats}'),
               const SizedBox(height: 16),
-              const Text('Are you sure you want to book this bus?'),
+              const Text('Booking Fee: ₹50.00'),
+              const SizedBox(height: 8),
+              const Text('Proceed to payment to confirm your booking.'),
             ],
           ),
           actions: [
@@ -619,15 +622,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.of(context).pop();
-                await _bookBus(bus, busService);
+                _navigateToPayment(bus, route);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Confirm'),
+              child: const Text('Proceed to Payment'),
             ),
           ],
         );
@@ -662,6 +665,31 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         );
       },
     );
+  }
+
+  Future<void> _navigateToPayment(Bus bus, BusRoute? route) async {
+    if (route == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Route information not found'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentPage(bus: bus, route: route),
+      ),
+    );
+
+    if (result == true) {
+      // Payment successful, switch to bookings tab
+      _tabController.animateTo(1);
+    }
   }
 
   Future<void> _bookBus(Bus bus, BusService busService) async {

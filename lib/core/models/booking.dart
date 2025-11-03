@@ -15,6 +15,12 @@ class Booking {
   final BookingStatus status;
   final DateTime? cancelledAt;
   final DateTime createdAt;
+  
+  // Payment details
+  final String? paymentId;
+  final String? orderId;
+  final String? signature;
+  final double? amount;
 
   Booking({
     required this.id,
@@ -33,6 +39,10 @@ class Booking {
     this.status = BookingStatus.confirmed,
     this.cancelledAt,
     required this.createdAt,
+    this.paymentId,
+    this.orderId,
+    this.signature,
+    this.amount,
   });
 
   factory Booking.fromMap(Map<String, dynamic> map, String id) {
@@ -56,6 +66,10 @@ class Booking {
       ),
       cancelledAt: map['cancelledAt']?.toDate(),
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      paymentId: map['paymentId'],
+      orderId: map['orderId'],
+      signature: map['signature'],
+      amount: map['amount']?.toDouble(),
     );
   }
 
@@ -76,6 +90,10 @@ class Booking {
       'status': status.name,
       'cancelledAt': cancelledAt,
       'createdAt': createdAt,
+      'paymentId': paymentId,
+      'orderId': orderId,
+      'signature': signature,
+      'amount': amount,
     };
   }
 
@@ -96,6 +114,10 @@ class Booking {
     BookingStatus? status,
     DateTime? cancelledAt,
     DateTime? createdAt,
+    String? paymentId,
+    String? orderId,
+    String? signature,
+    double? amount,
   }) {
     return Booking(
       id: id ?? this.id,
@@ -114,6 +136,10 @@ class Booking {
       status: status ?? this.status,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       createdAt: createdAt ?? this.createdAt,
+      paymentId: paymentId ?? this.paymentId,
+      orderId: orderId ?? this.orderId,
+      signature: signature ?? this.signature,
+      amount: amount ?? this.amount,
     );
   }
 }

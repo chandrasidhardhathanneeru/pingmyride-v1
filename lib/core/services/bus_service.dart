@@ -179,6 +179,13 @@ class BusService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      // Check if any buses are using this route
+      final busesUsingRoute = _buses.where((bus) => bus.routeId == routeId).toList();
+      if (busesUsingRoute.isNotEmpty) {
+        debugPrint('Cannot delete route: ${busesUsingRoute.length} buses are using this route');
+        return false;
+      }
+
       await _firestore.collection('routes').doc(routeId).delete();
       await fetchRoutes(); // Refresh the list
       return true;
@@ -340,6 +347,120 @@ class BusService extends ChangeNotifier {
     }
   }
 
+  // Booking with payment details
+  Future<bool> bookBusWithPayment(
+    Bus bus,
+    BusRoute route, {
+    required String paymentId,
+    required String orderId,
+    required String signature,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        debugPrint('User not authenticated');
+        return false;
+      }
+
+      if (!bus.hasAvailableSeats) {
+        debugPrint('No available seats on bus ${bus.busNumber}');
+        return false;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      // Check if user already has a booking for this bus
+      final existingBooking = await _firestore
+          .collection('bookings')
+          .where('userId', isEqualTo: user.uid)
+          .where('busId', isEqualTo: bus.id)
+          .where('status', isEqualTo: BookingStatus.confirmed.name)
+          .get();
+
+      if (existingBooking.docs.isNotEmpty) {
+        debugPrint('User already has a booking for this bus');
+        return false;
+      }
+
+      // Get user profile for booking details
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final userData = userDoc.data() ?? {};
+
+      // Create booking with payment details
+      final booking = Booking(
+        id: '', // Will be set by Firestore
+        userId: user.uid,
+        userName: userData['name'] ?? 'Unknown',
+        userEmail: user.email ?? '',
+        busId: bus.id,
+        routeId: route.id,
+        busNumber: bus.busNumber,
+        routeName: route.routeName,
+        bookingDate: DateTime.now(),
+        pickupLocation: route.pickupLocation,
+        dropLocation: route.dropLocation,
+        driverName: bus.driverName,
+        driverPhone: bus.driverPhone,
+        createdAt: DateTime.now(),
+        paymentId: paymentId,
+        orderId: orderId,
+        signature: signature,
+        amount: 50.0, // Default booking fee from RazorpayConfig
+      );
+
+      debugPrint('Creating booking with payment for user ${user.uid} on bus ${bus.busNumber}');
+
+      // Use a transaction to ensure data consistency
+      await _firestore.runTransaction((transaction) async {
+        // Check bus capacity again within transaction
+        final busRef = _firestore.collection('buses').doc(bus.id);
+        final busSnapshot = await transaction.get(busRef);
+        
+        if (!busSnapshot.exists) {
+          throw Exception('Bus not found');
+        }
+        
+        final currentBus = Bus.fromMap(busSnapshot.data()!, busSnapshot.id);
+        if (!currentBus.hasAvailableSeats) {
+          throw Exception('No available seats');
+        }
+
+        // Create booking document
+        final bookingRef = _firestore.collection('bookings').doc();
+        transaction.set(bookingRef, booking.toMap());
+
+        // Update bus booked seats count
+        transaction.update(busRef, {
+          'bookedSeats': currentBus.bookedSeats + 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        debugPrint('Booking with payment transaction completed successfully');
+      });
+
+      debugPrint('Booking with payment created successfully, refreshing data...');
+
+      // Refresh data
+      await Future.wait([
+        fetchBuses(),
+        fetchUserBookings(),
+      ]);
+
+      _isLoading = false;
+      notifyListeners();
+      
+      debugPrint('Booking with payment process completed');
+      return true;
+    } catch (e) {
+      debugPrint('Error booking bus with payment: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> cancelBooking(Booking booking) async {
     try {
       final user = _auth.currentUser;
@@ -353,6 +474,13 @@ class BusService extends ChangeNotifier {
 
       // Use a transaction to ensure data consistency
       await _firestore.runTransaction((transaction) async {
+        // IMPORTANT: All reads must happen before all writes in Firestore transactions
+        
+        // First, read the bus data
+        final busRef = _firestore.collection('buses').doc(booking.busId);
+        final busSnapshot = await transaction.get(busRef);
+        
+        // Now perform all write operations
         // Update booking status
         final bookingRef = _firestore.collection('bookings').doc(booking.id);
         transaction.update(bookingRef, {
@@ -361,9 +489,6 @@ class BusService extends ChangeNotifier {
         });
 
         // Update bus booked seats count
-        final busRef = _firestore.collection('buses').doc(booking.busId);
-        final busSnapshot = await transaction.get(busRef);
-        
         if (busSnapshot.exists) {
           final currentBus = Bus.fromMap(busSnapshot.data()!, busSnapshot.id);
           transaction.update(busRef, {

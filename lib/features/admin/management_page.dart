@@ -644,32 +644,89 @@ class RouteManagementTab extends StatelessWidget {
   }
 
   void _showDeleteRouteConfirmation(BuildContext context, BusRoute route) {
+    final busService = Provider.of<BusService>(context, listen: false);
+    final busesUsingRoute = busService.buses.where((bus) => bus.routeId == route.id).toList();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Route'),
-        content: Text('Are you sure you want to delete route "${route.routeName}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete route "${route.routeName}"?'),
+            if (busesUsingRoute.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Warning: ${busesUsingRoute.length} bus${busesUsingRoute.length > 1 ? 'es are' : ' is'} using this route',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Buses: ${busesUsingRoute.map((b) => b.busNumber).join(', ')}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please reassign or delete these buses first.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final busService = Provider.of<BusService>(context, listen: false);
-              final success = await busService.deleteRoute(route.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(success ? 'Route deleted successfully' : 'Failed to delete route'),
-                    backgroundColor: success ? Colors.green : Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
+          if (busesUsingRoute.isEmpty)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final success = await busService.deleteRoute(route.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Route deleted successfully' : 'Failed to delete route'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
         ],
       ),
     );
