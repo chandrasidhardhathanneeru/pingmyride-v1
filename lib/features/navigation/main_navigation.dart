@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import '../../core/models/user_type.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/bus_service.dart';
+import '../../core/services/auth_service.dart';
 import '../home/home_page.dart';
 import '../bookings/bookings_page.dart';
 import '../admin/management_page.dart';
 import '../admin/analytics_page.dart';
 import '../profile/profile_page.dart';
+import '../driver/driver_home_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final UserType userType;
@@ -32,7 +34,7 @@ class _MainNavigationState extends State<MainNavigation> {
         ];
       case UserType.driver:
         return [
-          HomePage(userType: widget.userType),
+          const DriverHomePage(),
           const RoutePage(),
           const StudentsPage(),
           const ProfilePage(),
@@ -360,36 +362,8 @@ class RoutePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Route'),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.route_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Driver Route',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Manage your assigned routes',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // This is essentially the same as DriverHomePage
+    return const DriverHomePage();
   }
 }
 
@@ -400,33 +374,135 @@ class StudentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Students'),
+        title: const Text('All Students'),
         elevation: 0,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.group_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+      body: Consumer<BusService>(builder: (context, busService, child) {
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final driverEmail = authService.currentUser?.email;
+        
+        // Get driver's buses
+        final driverBuses = busService.buses
+            .where((bus) => bus.driverEmail == driverEmail && bus.isActive)
+            .toList();
+
+        if (busService.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (driverBuses.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.group_outlined,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Bus Assigned',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Contact admin to get assigned to a bus',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Student List',
-              style: Theme.of(context).textTheme.headlineMedium,
+          );
+        }
+
+        // Get all bookings for driver's buses
+        final allStudents = <String, Map<String, dynamic>>{};
+        
+        for (final bus in driverBuses) {
+          final busBookings = busService.confirmedBookings
+              .where((b) => b.busId == bus.id)
+              .toList();
+          
+          for (final booking in busBookings) {
+            if (!allStudents.containsKey(booking.userId)) {
+              allStudents[booking.userId] = {
+                'userId': booking.userId,
+                'userName': booking.userName,
+                'bookings': 1,
+                'buses': {bus.busNumber},
+              };
+            } else {
+              allStudents[booking.userId]!['bookings'] = 
+                  (allStudents[booking.userId]!['bookings'] as int) + 1;
+              (allStudents[booking.userId]!['buses'] as Set<String>)
+                  .add(bus.busNumber);
+            }
+          }
+        }
+
+        final studentList = allStudents.values.toList();
+
+        if (studentList.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Students Yet',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Students who book your bus will appear here',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'View students on your route',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: studentList.length,
+          itemBuilder: (context, index) {
+            final student = studentList[index];
+            final buses = student['buses'] as Set<String>;
+            
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.person,
+                    color: Theme.of(context).primaryColor,
                   ),
-            ),
-          ],
-        ),
-      ),
+                ),
+                title: Text(
+                  student['userName'] as String? ?? student['userId'] as String,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  '${student['bookings']} booking(s) • ${buses.join(', ')}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

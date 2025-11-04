@@ -46,15 +46,15 @@ class DriverTripQRPage extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Trip details
-                _buildTripDetails(currentTripQR),
+                _buildTripDetails(context, currentTripQR),
                 const SizedBox(height: 24),
 
                 // Scanned students count
-                _buildScanStats(currentTripQR),
+                _buildScanStats(context, currentTripQR),
                 const SizedBox(height: 24),
 
                 // Instructions
-                _buildInstructions(),
+                _buildInstructions(context),
               ],
             ),
           );
@@ -161,7 +161,7 @@ class DriverTripQRPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTripDetails(TripQR tripQR) {
+  Widget _buildTripDetails(BuildContext context, TripQR tripQR) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -172,26 +172,24 @@ class DriverTripQRPage extends StatelessWidget {
           children: [
             Text(
               'Trip Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const Divider(height: 24),
-            _buildDetailRow(Icons.directions_bus, 'Bus', tripQR.busNumber),
+            _buildDetailRow(context, Icons.directions_bus, 'Bus', tripQR.busNumber),
             const SizedBox(height: 12),
-            _buildDetailRow(Icons.route, 'Route', tripQR.routeName),
+            _buildDetailRow(context, Icons.route, 'Route', tripQR.routeName),
             const SizedBox(height: 12),
             _buildDetailRow(
+              context,
               Icons.calendar_today,
               'Date',
               DateFormat('MMM dd, yyyy').format(tripQR.travelDate),
             ),
             const SizedBox(height: 12),
-            _buildDetailRow(Icons.access_time, 'Time', tripQR.timeSlot),
+            _buildDetailRow(context, Icons.access_time, 'Time', tripQR.timeSlot),
             const SizedBox(height: 12),
             _buildDetailRow(
+              context,
               Icons.timer,
               'Expires',
               DateFormat('h:mm a').format(tripQR.expiresAt),
@@ -202,16 +200,15 @@ class DriverTripQRPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(BuildContext context, IconData icon, String label, String value) {
     return Row(
       children: [
         Icon(icon, size: 20, color: AppTheme.primaryColor),
         const SizedBox(width: 12),
         Text(
           '$label:',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).textTheme.bodySmall?.color,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -230,7 +227,7 @@ class DriverTripQRPage extends StatelessWidget {
     );
   }
 
-  Widget _buildScanStats(TripQR tripQR) {
+  Widget _buildScanStats(BuildContext context, TripQR tripQR) {
     return Card(
       elevation: 2,
       color: Colors.blue[50],
@@ -255,10 +252,7 @@ class DriverTripQRPage extends StatelessWidget {
                 ),
                 Text(
                   'Students Boarded',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -268,7 +262,7 @@ class DriverTripQRPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInstructions() {
+  Widget _buildInstructions(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -294,16 +288,16 @@ class DriverTripQRPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _buildInstructionItem('1. Keep this screen visible for students'),
-          _buildInstructionItem('2. Students scan this QR to board the bus'),
-          _buildInstructionItem('3. Watch the counter to track boardings'),
-          _buildInstructionItem('4. Tap "End Trip" when journey is complete'),
+          _buildInstructionItem(context, '1. Keep this screen visible for students'),
+          _buildInstructionItem(context, '2. Students scan this QR to board the bus'),
+          _buildInstructionItem(context, '3. Watch the counter to track boardings'),
+          _buildInstructionItem(context, '4. Tap "End Trip" when journey is complete'),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionItem(String text) {
+  Widget _buildInstructionItem(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -314,10 +308,7 @@ class DriverTripQRPage extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[800],
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],

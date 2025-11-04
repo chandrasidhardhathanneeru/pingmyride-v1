@@ -88,20 +88,22 @@ class _DriverHomePageState extends State<DriverHomePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.directions_bus_outlined, size: 80, color: Colors.grey[400]),
+          Icon(
+            Icons.directions_bus_outlined,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             'No bus assigned',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
             'Contact admin to get assigned to a bus',
-            style: TextStyle(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
         ],
       ),
@@ -248,7 +250,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         ),
                         Text(
                           tripQR.timeSlot,
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ),
@@ -274,9 +276,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       const SizedBox(height: 4),
                       Text(
                         '${tripQR.scannedCount} boarded',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -287,18 +287,26 @@ class _DriverHomePageState extends State<DriverHomePage> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     DateFormat('MMM dd, yyyy').format(tripQR.travelDate),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.timer, size: 14, color: Colors.grey[600]),
+                  Icon(
+                    Icons.timer,
+                    size: 14,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Expires ${DateFormat('h:mm a').format(tripQR.expiresAt)}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -372,9 +380,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       if (route != null)
                         Text(
                           route.routeName,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                     ],
@@ -420,20 +427,15 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           if (nextTimeSlot['stopName'] != null && nextTimeSlot['stopName'].isNotEmpty)
                             Text(
                               nextTimeSlot['stopName'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                         ],
                       ),
                     ),
                     Text(
                       '${nextTimeSlot['bookings']} students',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
                       ),
                     ),
                   ],
@@ -444,17 +446,20 @@ class _DriverHomePageState extends State<DriverHomePage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.grey[600]),
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'No upcoming time slots for today',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                   ],

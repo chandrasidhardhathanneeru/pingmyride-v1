@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   // Backward compatibility - exposed color constants
   static const Color primaryColor = Color(0xFF0F172A);
+  static const Color accentColor = Color(0xFF3B82F6); // Blue accent color
   static const Color secondaryColor = Color(0xFF64748B);
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color surfaceColor = Color(0xFFFFFFFF);

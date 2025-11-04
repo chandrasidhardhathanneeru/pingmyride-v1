@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/bus_service.dart';
 import '../../core/models/bus.dart';
 import '../../core/models/bus_route.dart';
@@ -290,11 +291,15 @@ class _AddBusDialogState extends State<AddBusDialog> {
   final _driverEmailController = TextEditingController();
   final _capacityController = TextEditingController();
   String? _selectedRouteId;
+  String? _selectedDriverId;
+  List<Map<String, dynamic>> _availableDrivers = [];
   bool _isLoading = false;
+  bool _isLoadingDrivers = true;
 
   @override
   void initState() {
     super.initState();
+    _fetchAvailableDrivers();
     if (widget.bus != null) {
       _busNumberController.text = widget.bus!.busNumber;
       _driverNameController.text = widget.bus!.driverName;
@@ -302,6 +307,62 @@ class _AddBusDialogState extends State<AddBusDialog> {
       _driverEmailController.text = widget.bus!.driverEmail;
       _capacityController.text = widget.bus!.capacity.toString();
       _selectedRouteId = widget.bus!.routeId;
+    }
+  }
+
+  Future<void> _fetchAvailableDrivers() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('userType', isEqualTo: 'driver')
+          .get();
+      
+      setState(() {
+        _availableDrivers = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['name'] ?? 'Unknown',
+            'email': data['email'] ?? '',
+            'phone': data['phone'] ?? '',
+          };
+        }).toList();
+        _isLoadingDrivers = false;
+        
+        // If editing a bus, try to find and select the current driver
+        if (widget.bus != null) {
+          final currentDriver = _availableDrivers.firstWhere(
+            (driver) => driver['email'] == widget.bus!.driverEmail,
+            orElse: () => {},
+          );
+          if (currentDriver.isNotEmpty) {
+            _selectedDriverId = currentDriver['id'];
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error fetching drivers: $e');
+      setState(() {
+        _isLoadingDrivers = false;
+      });
+    }
+  }
+
+  void _onDriverSelected(String? driverId) {
+    if (driverId == null) return;
+    
+    final driver = _availableDrivers.firstWhere(
+      (d) => d['id'] == driverId,
+      orElse: () => {},
+    );
+    
+    if (driver.isNotEmpty) {
+      setState(() {
+        _selectedDriverId = driverId;
+        _driverNameController.text = driver['name'];
+        _driverEmailController.text = driver['email'];
+        _driverPhoneController.text = driver['phone'];
+      });
     }
   }
 
@@ -339,47 +400,97 @@ class _AddBusDialogState extends State<AddBusDialog> {
                   },
                 ),
                 const SizedBox(height: 12),
-                CustomTextField(
-                  label: 'Driver Name',
-                  hint: 'Enter driver full name',
-                  controller: _driverNameController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter driver name';
-                    }
-                    return null;
-                  },
-                ),
+                _isLoadingDrivers
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Select Driver',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        value: _selectedDriverId,
+                        items: _availableDrivers.map((driver) {
+                          return DropdownMenuItem<String>(
+                            value: driver['id'] as String,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  driver['name'] as String,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  driver['email'] as String,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context).textTheme.bodySmall?.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: _onDriverSelected,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select a driver';
+                          }
+                          return null;
+                        },
+                      ),
                 const SizedBox(height: 12),
-                CustomTextField(
-                  label: 'Driver Phone',
-                  hint: 'Enter driver phone number',
-                  controller: _driverPhoneController,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter driver phone';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                CustomTextField(
-                  label: 'Driver Email',
-                  hint: 'Enter driver email',
-                  controller: _driverEmailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter driver email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
+                if (_selectedDriverId != null) ...[
+                  TextFormField(
+                    controller: _driverNameController,
+                    enabled: false,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Driver Name',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _driverEmailController,
+                    enabled: false,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Driver Email',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _driverPhoneController,
+                    enabled: false,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Driver Phone',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 CustomTextField(
                   label: 'Capacity',
                   hint: 'Number of passengers',

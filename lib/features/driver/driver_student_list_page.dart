@@ -128,8 +128,12 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,11 +144,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Select Date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -154,9 +156,11 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -168,7 +172,10 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                                 style: const TextStyle(fontWeight: FontWeight.w500),
                               ),
                             ),
-                            const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
                           ],
                         ),
                       ),
@@ -179,11 +186,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Select Time Slot',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -222,7 +227,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.white : AppTheme.primaryColor.withOpacity(0.2),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -230,7 +237,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? AppTheme.primaryColor : Colors.grey[700],
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           ),
@@ -245,7 +254,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
       selectedColor: AppTheme.primaryColor,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.grey[800],
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).textTheme.bodyMedium?.color,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -255,17 +266,19 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Filter:',
-            style: TextStyle(
-              fontSize: 14,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.grey,
             ),
           ),
           const SizedBox(width: 12),
@@ -288,7 +301,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isSelected ? Colors.white : Colors.grey[300],
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -296,7 +311,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? AppTheme.primaryColor : Colors.grey[700],
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).textTheme.bodyMedium?.color,
                               ),
                             ),
                           ),
@@ -311,7 +328,9 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                       selectedColor: AppTheme.primaryColor,
                       checkmarkColor: Colors.white,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey[800],
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).textTheme.bodyMedium?.color,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -357,12 +376,14 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
               decoration: BoxDecoration(
                 color: hasScanned
                     ? Colors.green.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(
                 hasScanned ? Icons.check_circle : Icons.person,
-                color: hasScanned ? Colors.green : Colors.grey[600],
+                color: hasScanned
+                    ? Colors.green
+                    : Theme.of(context).iconTheme.color?.withOpacity(0.6),
                 size: 28,
               ),
             ),
@@ -381,25 +402,27 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         booking.selectedTimeSlot ?? 'No time slot',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           booking.pickupLocation,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -451,21 +474,23 @@ class _DriverStudentListPageState extends State<DriverStudentListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
+          Icon(
+            Icons.people_outline,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             'No students found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
             _getEmptyStateMessage(),
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
         ],
       ),
