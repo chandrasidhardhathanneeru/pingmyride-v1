@@ -57,6 +57,15 @@ dependencies:
   # Location tracking
   geolocator: ^13.0.2
   fluttertoast: ^8.2.8
+  
+  # Maps and routing
+  google_maps_flutter: ^2.9.0
+  flutter_polyline_points: ^2.1.0
+  
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.2.3
+  crypto: ^3.0.5
 
 dev_dependencies:
   flutter_test:

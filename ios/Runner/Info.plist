@@ -51,5 +51,7 @@
 	<string>This app needs access to your location in the background to continuously track the bus location for accurate tracking.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>This app needs access to your location in the background to continuously track the bus location.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to scan QR codes for ticket verification.</string>
 </dict>
 </plist>

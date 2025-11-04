@@ -7,6 +7,8 @@ import 'core/services/auth_service.dart';
 import 'core/services/bus_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/services/location_manager.dart';
+import 'core/services/tracking_service.dart';
+import 'core/services/trip_qr_service.dart';
 import 'features/auth/login_page.dart';
 
 void main() async {
@@ -28,6 +30,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BusService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),
         ChangeNotifierProvider(create: (_) => LocationManager()),
+        ChangeNotifierProvider(create: (_) => TrackingService()),
+        ChangeNotifierProvider(create: (_) => TripQRService()),
       ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
